@@ -19,10 +19,10 @@ class SingleFileDriver extends Driver
         }
 
         $this->options = [
-            'path'      => 'log.txt',   // Path to log file
+            'path'      => getcwd() . '/log.txt',   // Path to log file
             'max_size'  => 1024,  // In KB
         ] + $options;
-
+        
         $this->formatter = $formatter;
     }
 

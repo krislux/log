@@ -57,8 +57,7 @@ class Logger implements LoggerInterface
         $this->options = [
             'dev' => true,        // Dev mode as opposed to production. Includes all logging levels.
             'trace' => true,      // Include trace information in warnings and above.
-            'immediate' => false  // Write or send entries as they are added instead of buffering.
-                                  // Generally more demanding, but can be useful if you expect the server to crash.
+            'defer' => true       // Cache entries and log all at once on shutdown rather than immediately.
         ] + $options;
         
         foreach (func_get_args() as $arg) {
@@ -111,11 +110,11 @@ class Logger implements LoggerInterface
         $entry = new LogEntry($level, $message, $context, $origin);
 
         // Add to log entries list or flush immediately, depending on settings.
-        if ($this->options['immediate']) {
-            $this->flush([$entry]);
+        if ($this->options['defer']) {
+            $this->entries[] = $entry;
         }
         else {
-            $this->entries[] = $entry;
+            $this->flush([$entry]);
         }
     }
 
