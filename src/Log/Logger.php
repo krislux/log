@@ -6,7 +6,6 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\InvalidArgumentException;
 use KrisLux\Log\Drivers\DriverInterface;
 use KrisLux\Log\LogEntry;
-use KrisLux\Log\Handler;
 
 class Logger implements LoggerInterface
 {
