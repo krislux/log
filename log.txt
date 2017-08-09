@@ -1,2 +1,0 @@
-[2017-08-09 11:27:03] WARNING Something went wrong {"a":"b"} {"file":"C:\\wamp3\\www\\log\\test\\testclass.php","line":14,"function":"fail","class":"Testsuite\\Testclass","object":{},"type":"->","args":[],"memory":277376,"memory_peak":284904}
-[2017-08-09 11:49:34] WARNING Something went wrong {"a":"b"} []
