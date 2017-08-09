@@ -29,22 +29,22 @@ class LogEntry
     public $context = [];
 
     /**
-     * Trace information about the origin class/function of the log entry.
+     * Auto-generated information about the calling class/method and machine state.
      */
 
-    public $origin = [];
+    public $profile = [];
 
 
     /**
      * 
      */
 
-    public function __construct($level, $message, $context, $origin)
+    public function __construct($level, $message, $context, $profile)
     {
         $this->timestamp = new DateTime();
         $this->level = $level;
         $this->message = $message;
         $this->context = $context;
-        $this->origin = $origin;
+        $this->profile = $profile;
     }
 }

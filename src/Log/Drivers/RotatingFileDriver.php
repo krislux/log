@@ -1,18 +1,18 @@
 <?php namespace KrisLux\Log\Drivers;
 
 /**
- * Driver for a single log file that automatically resets itself when it reaches a set size.
+ * Driver for a set of rotating log files.
  *
  * Supported options:
- * path         Absolute filesystem path to the output file. Will NOT attempt to create folders.
- * max_size     In kilobytes, the maximum size of the log before resetting. Default is 1 MB.
+ * dir          Absolute path to the directory to store the logs in. Defaults to ./logs
+ * name         Naming scheme in date() format. Defaults to "Ymd\.\l\o\g". Precision determines rate of rotation.
  */
 
 use KrisLux\Log\Formatters\FormatterInterface;
 use KrisLux\Log\Formatters\LogFormatter;
 use KrisLux\Log\LogEntry;
 
-class SingleFileDriver extends Driver
+class RotatingFileDriver extends Driver
 {
     protected $handle = null;
 
@@ -24,8 +24,8 @@ class SingleFileDriver extends Driver
         }
 
         $this->options = [
-            'path'      => getcwd() . '/log.txt',   // Path to log file
-            'max_size'  => 1024,  // In KB. When reaching this size, log will simply start over.
+            'dir'       => getcwd() . '/logs/',   // Dir to store log files.
+            'name' => 'Ymd\.\l\o\g'   // Naming scheme for log file.
         ] + $options;
         
         $this->formatter = $formatter;
@@ -58,12 +58,11 @@ class SingleFileDriver extends Driver
          */
         if ( ! $this->handle) {
             $mode = 'a';
-            
-            if ( ! file_exists($this->options['path']) || filesize($this->options['path']) > ($this->options['max_size'] * 1024)) {
-                $mode = 'w';
-            }
 
-            $this->handle = fopen($this->options['path'], $mode);
+            $dir = rtrim($this->options['dir'], "\\/") . DIRECTORY_SEPARATOR;
+            $path = $dir . date($this->options['name']);
+
+            $this->handle = fopen($path, $mode);
         }
 
         $string = (string)$this->formatter->format($entry) . PHP_EOL;

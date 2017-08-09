@@ -7,15 +7,14 @@ use Psr\Log\InvalidArgumentException;
 use KrisLux\Log\Drivers\DriverInterface;
 use KrisLux\Log\LogEntry;
 use KrisLux\Log\Handler;
-use KrisLux\Log\Exceptions\NoValidDriverException;
 
 class Logger implements LoggerInterface
 {
-    private $options = [];
+    protected $options = [];
 
-    private $drivers = [];
+    protected $drivers = [];
 
-    protected $entries = [];
+    protected $deferred_entries = [];
 
     /**
      * RFC 5424
@@ -41,8 +40,18 @@ class Logger implements LoggerInterface
         self::DEBUG     => 'DEBUG'
     ];
 
-    public static function getLevels()
+    /**
+     * Return the severity level list.
+     * By default with the level int as key and string as value, but optionally inverted.
+     * @param  bool  $inverted  Flip the array so the string is key.
+     * @return array
+     */
+    
+    public static function getLevels($inverted = false)
     {
+        if ($inverted) {
+            return array_flip(self::$levels);
+        }
         return self::$levels;
     }
 
@@ -56,8 +65,10 @@ class Logger implements LoggerInterface
         // Set default values and let arg override them.
         $this->options = [
             'dev' => true,        // Dev mode as opposed to production. Includes all logging levels.
-            'trace' => true,      // Include trace information in warnings and above.
-            'defer' => true       // Cache entries and log all at once on shutdown rather than immediately.
+            'trace' => true,      // Include trace information in errors and above.
+            'memory' => true,     // Include memory information in errors and above.
+            'defer' => false,     // Cache entries and log all at once on shutdown rather than immediately.
+            'quiet' => false      // If true, ignores any write failures. Otherwise ErrorException is thrown.
         ] + $options;
         
         foreach (func_get_args() as $arg) {
@@ -69,7 +80,7 @@ class Logger implements LoggerInterface
 
     public function __destruct()
     {
-        $this->flush($this->entries);
+        $this->flush($this->deferred_entries);
     }
 
     /**
@@ -90,7 +101,10 @@ class Logger implements LoggerInterface
     }
 
     /**
-     * 
+     * Add an entry to the log.
+     * @param  int     $level    Severity level as defined above and in RFC 5424.
+     * @param  string  $message  
+     * @param  array   $context  Any other data to include in the log. Will be encoded depending on driver, usually as JSON.
      */
 
     public function log($level, $message, array $context = [])
@@ -104,27 +118,45 @@ class Logger implements LoggerInterface
             return;
         }
 
-        // Include caller trace information only for warning or higher severity.
-        $origin = $level <= self::WARNING ? debug_backtrace()[2] : [];
+        // Include caller trace information only for error or higher severity.
+        $profile = [];
+        if ($level <= self::ERROR) {
+            if ($this->options['trace']) {
+                $profile += debug_backtrace()[2];
+            }
+            if ($this->options['memory']) {
+                $profile += [
+                    'memory' => memory_get_usage(),
+                    'memory_peak' => memory_get_peak_usage()
+                ];
+            }
+        }
 
-        $entry = new LogEntry($level, $message, $context, $origin);
+        $entry = new LogEntry($level, $message, $context, $profile);
 
         // Add to log entries list or flush immediately, depending on settings.
         if ($this->options['defer']) {
-            $this->entries[] = $entry;
+            $this->deferred_entries[] = $entry;
         }
         else {
             $this->flush([$entry]);
         }
     }
 
-
+    /**
+     * A simple wrapper for driver->write that can queue multiple entries.
+     */
+    
     private function flush(array $entries)
     {
         foreach ($entries as $entry) {
-            
+            $status = 1;
             foreach ($this->drivers as $driver) {
-                $driver->write($entry);
+                $status = $status & $driver->write($entry);
+            }
+
+            if ( ! $status && ! $this->options['quiet']) {
+                throw new ErrorException(sprintf('Unable to write log entry "%s". Likely no valid drivers exist.', $entry->message));
             }
         }
     }
@@ -141,7 +173,7 @@ class Logger implements LoggerInterface
 
     public function alert($message, array $context = [])
     {
-        $this->log(self::alert, $message, $context);
+        $this->log(self::ALERT, $message, $context);
     }
 
     public function critical($message, array $context = [])

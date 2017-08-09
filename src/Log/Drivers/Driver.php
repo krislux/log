@@ -38,8 +38,8 @@ abstract class Driver implements DriverInterface
     {
         if ( ! $this->filter)
             return true;
-        
-        return $this->filter($level);
+        $closure = $this->filter;
+        return $closure($level);
     }
 
 }
