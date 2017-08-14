@@ -23,10 +23,10 @@ class SingleFileDriver extends Driver
             $formatter = new LogFormatter;    // Default formatter if no other provided.
         }
 
-        $this->options = [
+        $this->options = $options + [
             'path'      => getcwd() . '/log.txt',   // Path to log file
             'max_size'  => 1024,  // In KB. When reaching this size, log will simply start over.
-        ] + $options;
+        ];
         
         $this->formatter = $formatter;
     }
@@ -40,11 +40,6 @@ class SingleFileDriver extends Driver
         if ($this->handle) {
             fclose($this->handle);
         }
-    }
-
-    public function setFormatter(FormatterInterface $formatter)
-    {
-        $this->formatter = $formatter;
     }
 
     public function write(LogEntry $entry)

@@ -23,10 +23,10 @@ class RotatingFileDriver extends Driver
             $formatter = new LogFormatter;    // Default formatter if no other provided.
         }
 
-        $this->options = [
+        $this->options = $options + [
             'dir'       => getcwd() . '/logs/',   // Dir to store log files.
             'name' => 'Ymd\.\l\o\g'   // Naming scheme for log file.
-        ] + $options;
+        ];
         
         $this->formatter = $formatter;
     }
@@ -40,11 +40,6 @@ class RotatingFileDriver extends Driver
         if ($this->handle) {
             fclose($this->handle);
         }
-    }
-
-    public function setFormatter(FormatterInterface $formatter)
-    {
-        $this->formatter = $formatter;
     }
 
     public function write(LogEntry $entry)

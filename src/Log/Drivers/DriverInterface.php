@@ -7,6 +7,8 @@ interface DriverInterface
 {   
     public function __construct(array $options = [], FormatterInterface $formatter = null);
 
+    public function setFormatter(FormatterInterface $formatter);
+
     /**
      * @param  callable   $filter   A lambda to filter when the driver is used. Current error level as the only parameter.
      *                              E.g. the lambda: function(x){return x==0;} will use the driver only for emergency level entries.

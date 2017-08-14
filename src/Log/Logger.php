@@ -62,13 +62,13 @@ class Logger implements LoggerInterface
     public function __construct(array $options = [])
     {
         // Set default values and let arg override them.
-        $this->options = [
+        $this->options = $options + [
             'dev' => true,        // Dev mode as opposed to production. Includes all logging levels.
             'trace' => true,      // Include trace information in errors and above.
             'memory' => true,     // Include memory information in errors and above.
             'defer' => false,     // Cache entries and log all at once on shutdown rather than immediately.
             'quiet' => false      // If true, ignores any write failures. Otherwise ErrorException is thrown.
-        ] + $options;
+        ];
         
         foreach (func_get_args() as $arg) {
             if ($arg instanceof DriverInterface) {
@@ -111,7 +111,6 @@ class Logger implements LoggerInterface
         if ( ! isset(self::$levels[$level])) {
             throw new InvalidArgumentException(sprintf('Invalid severity level "%s"', $level));
         }
-
         // In production mode, only errors and higher severity are logged.
         if ( ! $this->options['dev'] && $level > self::ERROR) {
             return;
@@ -121,7 +120,7 @@ class Logger implements LoggerInterface
         $profile = [];
         if ($level <= self::ERROR) {
             if ($this->options['trace']) {
-                $profile += debug_backtrace()[2];
+                $profile += $this->getTrace();
             }
             if ($this->options['memory']) {
                 $profile += [
@@ -143,6 +142,20 @@ class Logger implements LoggerInterface
     }
 
     /**
+     * Get the first object from the trace stack that is not from this namespace.
+     */
+    
+    private function getTrace()
+    {
+        foreach (debug_backtrace() as $trace) {
+            if (strpos($trace['class'], __NAMESPACE__) !== 0) {
+                return $trace;
+            }
+        }
+        return null;
+    }
+
+    /**
      * A simple wrapper for driver->write that can queue multiple entries.
      */
     
@@ -151,7 +164,9 @@ class Logger implements LoggerInterface
         foreach ($entries as $entry) {
             $status = 1;
             foreach ($this->drivers as $driver) {
-                $status = $status & $driver->write($entry);
+                if ($driver->testFilter($entry->level)) {
+                    $status = $status & $driver->write($entry);
+                }
             }
 
             if ( ! $status && ! $this->options['quiet']) {

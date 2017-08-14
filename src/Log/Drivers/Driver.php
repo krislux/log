@@ -19,6 +19,11 @@ abstract class Driver implements DriverInterface
         $this->options = $options;
         $this->formatter = $formatter;
     }
+
+    public function setFormatter(FormatterInterface $formatter)
+    {
+        $this->formatter = $formatter;
+    }
     
     /**
      * A lambda to filter when the driver is used. Current error level as the only parameter.

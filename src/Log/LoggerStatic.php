@@ -22,9 +22,14 @@ class LoggerStatic
     const INFO = 6;         // informational messages
     const DEBUG = 7;        // debug-level messages
 
-    public static function init(array $options, DriverInterface $driver)
+    public static function init(array $options, DriverInterface $driver = null)
     {
         self::$logger = new Logger($options, $driver);
+    }
+
+    public static function addDriver(DriverInterface $driver, callable $filter = null)
+    {
+        self::$logger->addDriver($driver, $filter);
     }
 
     public static function log($level, $message, array $context = [])
